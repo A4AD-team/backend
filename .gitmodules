@@ -1,6 +1,8 @@
 [submodule "api-gateway"]
 	path = api-gateway
 	url = git@github.com:A4AD-team/api-gateway.git
+	branch = develop
 [submodule "auth-service"]
 	path = auth-service
 	url = git@github.com:A4AD-team/auth-service.git
+	branch = develop
