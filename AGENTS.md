@@ -4,7 +4,7 @@ This file contains guidelines for agentic coding agents working in this A4AD Tea
 
 ## Project Overview
 
-This is a microservices-based business process engine with the following services:
+This is a microservices-based business process engine with git submodules:
 - **api-gateway** (Go + Fiber) - Entry point, routing, auth, rate limiting
 - **auth-service** (Java + Spring Boot) - IAM, JWT, roles, permissions  
 - **workflow-service** (Go + Neo4j) - Graph-based workflow engine
@@ -25,14 +25,16 @@ go build -o bin/service ./cmd/server
 go run ./cmd/server
 
 # Test
-go test ./...
-go test -v ./internal/handler   # Run specific package tests
-go test -run TestSpecificFunction ./internal/service
+go test ./...                        # All tests
+go test -v ./internal/handler        # Specific package
+go test -run TestSpecificFunction ./internal/service  # Specific function
+go test -race ./...                  # Race condition detection
 
-# Lint
+# Lint/Format (automatically run via lefthook pre-commit)
 go fmt ./...
 go vet ./...
-golangci-lint run  # if configured
+goimports -w .
+golangci-lint run                    # if configured
 
 # Dependencies
 go mod tidy
@@ -50,10 +52,10 @@ mvn spring-boot:run -Dspring.profiles.active=local
 
 # Test
 mvn test
-mvn test -Dtest=AuthServiceTest   # Run specific test class
+mvn test -Dtest=AuthServiceTest      # Specific test class
 
 # Lint/Format
-mvn spotless:apply   # if configured
+mvn spotless:apply                   # if configured
 mvn checkstyle:check
 
 # Dependencies
@@ -75,7 +77,7 @@ npm run start:dev
 npm test
 npm run test:watch
 npm run test:e2e
-npm test -- src/auth/auth.service.spec.ts  # Run specific test file
+npm test -- src/auth/auth.service.spec.ts  # Specific test file
 
 # Lint/Format
 npm run lint
@@ -87,16 +89,21 @@ npm run type-check
 npx tsc --noEmit
 ```
 
+## Git Hooks & Automation
+
+This monorepo uses Lefthook for Git automation:
+- **Pre-commit**: Auto-formats code, runs linting, executes tests on staged files
+- **Commit-msg**: Validates conventional commit format (feat/fix/docs/etc)
+- **Pre-push**: Runs full test suite, race condition tests, validates branch names
+
+Branch naming follows Git Flow: `feature/description`, `bugfix/description`, `hotfix/description`
+
 ## Code Style Guidelines
 
 ### Go Services
 - **Imports**: Group standard library, third-party, then internal packages
 - **Formatting**: Use `gofmt` and `goimports`
-- **Naming**: 
-  - Package names: lowercase, single words when possible
-  - Functions: `CamelCase` for exported, `camelCase` for unexported
-  - Variables: `camelCase`, abbreviate sparingly
-  - Constants: `UPPER_SNAKE_CASE` or `camelCase` for typed constants
+- **Naming**: Package names lowercase; Functions `CamelCase`/`camelCase`; Variables `camelCase`; Constants `UPPER_SNAKE_CASE`
 - **Error Handling**: Always handle errors, use fmt.Errorf for wrapping, avoid panic
 - **Structure**: Follow Standard Go Project Layout
 - **Interfaces**: Keep small, accept interfaces return structs
@@ -105,11 +112,7 @@ npx tsc --noEmit
 ### Java Service
 - **Imports**: Group static imports, then javax, then org, then com
 - **Formatting**: Use Google Java Style or Spotless
-- **Naming**:
-  - Classes: `PascalCase`
-  - Methods/variables: `camelCase`
-  - Constants: `UPPER_SNAKE_CASE`
-  - Packages: `lowercase.with.dots`
+- **Naming**: Classes `PascalCase`; Methods/variables `camelCase`; Constants `UPPER_SNAKE_CASE`; Packages `lowercase.with.dots`
 - **Spring Boot**: Use constructor injection, @Service/@Repository/@Controller annotations
 - **Testing**: Use @SpringBootTest for integration, @WebMvcTest for web layer
 - **JPA**: Use repositories, proper entity mapping with @Entity annotations
@@ -117,44 +120,23 @@ npx tsc --noEmit
 ### TypeScript Services
 - **Imports**: Use `import type` for types only, organize: node_modules, then @/, then relative
 - **Formatting**: Prettier with ESLint configuration
-- **Naming**:
-  - Classes/interfaces: `PascalCase`
-  - Functions/variables: `camelCase`
-  - Constants: `UPPER_SNAKE_CASE`
-  - Files: `kebab-case.ts`
+- **Naming**: Classes/interfaces `PascalCase`; Functions/variables `camelCase`; Constants `UPPER_SNAKE_CASE`; Files `kebab-case.ts`
 - **NestJS**: Use dependency injection, proper module structure
 - **TypeScript**: Strict mode enabled, prefer explicit types, avoid `any`
 - **Testing**: Use Jest, mock external dependencies, test both happy path and error cases
 
 ## Database Guidelines
 
-### PostgreSQL (auth-service, request-service)
-- Use UUID for primary keys
-- Add `created_at`, `updated_at` timestamps
-- Use JSONB for flexible metadata
-- Add proper indexes for query performance
-- Use migrations (Liquibase/Flyway for Java, manual SQL files for Go)
-
-### Neo4j (workflow-service)
-- Use Cypher queries, avoid N+1 problems
-- Model relationships explicitly
-- Use APOC procedures for complex operations
-- Index frequently queried properties
-
-### MongoDB (comment-service)
-- Use Mongoose schemas with validation
-- Add compound indexes for common query patterns
-- Use aggregation pipelines for complex queries
-
-### ClickHouse (audit-service)
-- Use appropriate data types (DateTime, UInt64, etc.)
-- Partition by time for efficient queries
-- Use materialized views for pre-aggregations
+### Databases by Service
+- **PostgreSQL** (auth, request): UUID primary keys, timestamps, JSONB metadata, proper indexes
+- **Neo4j** (workflow): Cypher queries, explicit relationships, APOC procedures, indexed properties
+- **MongoDB** (comments): Mongoose schemas, compound indexes, aggregation pipelines
+- **ClickHouse** (audit): Time partitioning, appropriate data types, materialized views
 
 ## Observability Standards
 
 - **Logging**: Structured JSON logging with correlation IDs
-- **Tracing**: OpenTelemetry with proper span naming
+- **Tracing**: OpenTelemetry with proper span naming  
 - **Metrics**: Prometheus client libraries, use standard metric names
 - **Health**: Implement `/health` and `/ready` endpoints
 
@@ -181,17 +163,3 @@ npx tsc --noEmit
 - Contract tests: Test service boundaries
 - E2E tests: Critical user journeys
 - Load tests: Performance testing for key endpoints
-
-## Git Workflow
-
-- Feature branches: `feature/service-name-description`
-- Commit messages: Conventional Commits format
-- PR reviews: Required for all changes
-- Semantic versioning: Apply tags for releases
-
-## Environment Management
-
-- Use environment-specific configuration
-- Local development: Docker Compose
-- CI/CD: GitHub Actions or similar
-- Secrets: Use vault or secret manager in production
