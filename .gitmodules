@@ -14,3 +14,11 @@
 	path = notification-service
 	url = git@github.com:A4AD-team/notification-service.git
 	branch = develop
+[submodule "profile-service"]
+	path = profile-service
+	url = git@github.com:A4AD-team/profile-service.git
+	branch = develop
+[submodule "post-service"]
+	path = post-service
+	url = git@github.com:A4AD-team/post-service.git
+	branch = develop
