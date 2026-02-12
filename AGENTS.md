@@ -23,12 +23,15 @@ go build -o bin/service ./cmd/server
 
 # Run locally
 go run ./cmd/server
+# or use make if available
+make run
 
 # Test
 go test ./...                        # All tests
 go test -v ./internal/handler        # Specific package
 go test -run TestSpecificFunction ./internal/service  # Specific function
 go test -race ./...                  # Race condition detection
+go test -cover ./...                 # With coverage
 
 # Lint/Format (automatically run via lefthook pre-commit)
 go fmt ./...
@@ -102,12 +105,13 @@ Branch naming follows Git Flow: `feature/description`, `bugfix/description`, `ho
 
 ### Go Services
 - **Imports**: Group standard library, third-party, then internal packages
-- **Formatting**: Use `gofmt` and `goimports`
+- **Formatting**: Use `gofmt` and `goimports` consistently
 - **Naming**: Package names lowercase; Functions `CamelCase`/`camelCase`; Variables `camelCase`; Constants `UPPER_SNAKE_CASE`
-- **Error Handling**: Always handle errors, use fmt.Errorf for wrapping, avoid panic
-- **Structure**: Follow Standard Go Project Layout
-- **Interfaces**: Keep small, accept interfaces return structs
-- **Testing**: Table-driven tests, use testify for assertions
+- **Error Handling**: Always handle errors explicitly, use `fmt.Errorf` for wrapping, never panic for flow control
+- **Structure**: Follow Standard Go Project Layout with cmd/, internal/, pkg/
+- **Interfaces**: Keep small, "accept interfaces, return structs" principle
+- **Testing**: Table-driven tests, use `testify/assert` for assertions, target 80%+ coverage
+- **Fiber-specific**: Use `fiber.Ctx` as primary context, `c.Next()` for middleware chain
 
 ### Java Service
 - **Imports**: Group static imports, then javax, then org, then com
@@ -119,11 +123,12 @@ Branch naming follows Git Flow: `feature/description`, `bugfix/description`, `ho
 
 ### TypeScript Services
 - **Imports**: Use `import type` for types only, organize: node_modules, then @/, then relative
-- **Formatting**: Prettier with ESLint configuration
+- **Formatting**: Prettier with ESLint configuration (2-space indentation, single quotes, 100 char line length)
 - **Naming**: Classes/interfaces `PascalCase`; Functions/variables `camelCase`; Constants `UPPER_SNAKE_CASE`; Files `kebab-case.ts`
-- **NestJS**: Use dependency injection, proper module structure
+- **NestJS**: Use dependency injection, proper module structure, `@Injectable()` for services
 - **TypeScript**: Strict mode enabled, prefer explicit types, avoid `any`
-- **Testing**: Use Jest, mock external dependencies, test both happy path and error cases
+- **Testing**: Use Jest, mock external dependencies, test both happy path and error cases, aim for >80% coverage
+- **Interfaces**: Prefix with `I` (`INotificationTemplate`, `IUserPreferences`)
 
 ## Database Guidelines
 
@@ -163,3 +168,20 @@ Branch naming follows Git Flow: `feature/description`, `bugfix/description`, `ho
 - Contract tests: Test service boundaries
 - E2E tests: Critical user journeys
 - Load tests: Performance testing for key endpoints
+
+## Docker Standards
+
+- Multi-stage builds for Go services
+- Use specific image tags, avoid `latest`
+- Include HEALTHCHECK instructions
+- Set proper USER directive for security
+- Use .dockerignore files
+
+## Performance Guidelines
+
+- Use connection pooling for database/HTTP clients
+- Implement proper timeouts for all external calls
+- Use context with timeout for long-running operations
+- Consider response caching for static endpoints
+- Monitor memory usage and goroutine leaks
+- Implement rate limiting at appropriate levels

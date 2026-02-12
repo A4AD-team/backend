@@ -6,27 +6,11 @@
 	path = auth-service
 	url = git@github.com:A4AD-team/auth-service.git
 	branch = develop
-[submodule "workflow-service"]
-	path = workflow-service
-	url = git@github.com:A4AD-team/workflow-service.git
-	branch = develop
-[submodule "request-service"]
-	path = request-service
-	url = git@github.com:A4AD-team/request-service.git
-	branch = develop
 [submodule "comment-service"]
 	path = comment-service
 	url = git@github.com:A4AD-team/comment-service.git
 	branch = develop
-[submodule "audit-service"]
-	path = audit-service
-	url = git@github.com:A4AD-team/audit-service.git
-	branch = develop
 [submodule "notification-service"]
 	path = notification-service
 	url = git@github.com:A4AD-team/notification-service.git
-	branch = develop
-[submodule "scheduler-service"]
-	path = scheduler-service
-	url = git@github.com:A4AD-team/scheduler-service.git
 	branch = develop
