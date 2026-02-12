@@ -1,118 +1,72 @@
-![A4AD Forum](https://img.shields.io/badge/A4AD-Forum-blue?style=for-the-badge&logo=discourse&logoColor=white)
-![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?style=for-the-badge&logo=go&logoColor=white)
-![Java](https://img.shields.io/badge/Java-21-blue?style=for-the-badge&logo=openjdk&logoColor=white)
-![NestJS](https://img.shields.io/badge/NestJS-10+-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Early%20Development-yellow?style=for-the-badge)
-
 # A4AD Forum Backend
 
-Microservices backend for a modern, lightweight forum — perfect for communities, hobby groups, internal discussions, or open projects.
+> Modern, lightweight, and scalable forum platform built with microservices architecture
 
-Built with simplicity, performance, and future scalability in mind.
+[![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
+[![Java](https://img.shields.io/badge/Java-21-007396?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![NestJS](https://img.shields.io/badge/NestJS-10+-E0234E?style=flat-square&logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Early%20Development-orange?style=flat-square)]()
+
+---
+
+## 📚 Documentation / Документация
+
+Choose your preferred language / Выберите предпочитаемый язык:
+
+- **[🇬🇧 English Documentation](README_EN.md)** — Complete documentation in English
+- **[🇷🇺 Русская документация](README_RU.md)** — Полная документация на русском языке
+
+---
 
 ## 🏗️ Architecture Overview
 
-### Services
-
-| Service                  | Language / Framework      | Database               | Responsibility                                      |
-|--------------------------|---------------------------|------------------------|-----------------------------------------------------|
-| **api-gateway**          | Go + Fiber                | —                      | Single entry point, JWT validation, rate limiting, CORS |
-| **auth-service**         | Java + Spring Boot        | PostgreSQL             | Registration, login, JWT, roles (user/mod/admin)    |
-| **profile-service**      | Go                        | PostgreSQL             | User profiles, avatars, bio, stats (posts, comments, reputation) |
-| **post-service**         | Go                        | PostgreSQL             | Posts CRUD, view/like/comment counters              |
-| **comment-service**      | NestJS + TypeScript       | MongoDB                | Threaded comments, replies, likes                   |
-| **notification-service** | NestJS + TypeScript       | Redis + PostgreSQL/MongoDB | Notifications (comments, replies, likes, mentions) |
-
-### High-level Flow
-
 ```mermaid
-graph TD
-    A[Client / Browser] --> B[API Gateway]
-    B --> C[Auth Service]
-    B --> D[Profile Service]
-    B --> E[Post Service]
-    B --> F[Comment Service]
-    B --> G[Notification Service]
-
-    E --> H[PostgreSQL]
-    F --> I[MongoDB]
-    G --> J[Redis]
-
-    E -.->|events| G
-    F -.->|events| G
+flowchart TB
+    Client(["Client"]) --> Gateway["API Gateway<br/>Go + Fiber"]
+    Gateway --> Auth["Auth Service<br/>Java + Spring Boot"]
+    Gateway --> Profile["Profile Service<br/>Go"]
+    Gateway --> Post["Post Service<br/>Go"]
+    Gateway --> Comment["Comment Service<br/>NestJS + MongoDB"]
+    Gateway --> Notification["Notification Service<br/>NestJS + Redis"]
 ```
 
-### 🚀 Quick Start
+---
 
-Requirements
-
-Git (with submodule support)
-Docker + Docker Compose
-Go 1.23+
-Java 21 + Maven
-Node.js 18+ + npm
-
-### Repository Structure
-
-Submodule-based layout — each service lives in its own repository.
+## 🚀 Quick Start
 
 ```bash
-forum-backend/
-├── .gitmodules
-├── api-gateway/
-├── auth-service/
-├── profile-service/
-├── post-service/
-├── comment-service/
-├── notification-service/
-├── docker-compose.yml
-└── README.md
-```
-
-### Setup Steps
-
-1. Clone with submodules
-
-```bash
+# Clone with submodules
 git clone --recurse-submodules https://github.com/A4AD-team/forum-backend.git
 cd forum-backend
+
+# Start infrastructure
+docker compose up -d
+
+# API will be available at http://localhost:8080
 ```
 
-2. Start infrastructure
+---
 
-```bash
-docker compose up -d postgres mongodb redis
-```
+## 📁 Services
 
-3. Install dependencies (run in each service folder)
-   
-   Go services:
+| Service | Tech | Port | Description |
+|---------|------|------|-------------|
+| [api-gateway](api-gateway/) | Go + Fiber | 8080 | API Gateway |
+| [auth-service](auth-service/) | Java + Spring Boot | 8081 | Authentication |
+| [profile-service](profile-service/) | Go | 8082 | User Profiles |
+| [post-service](post-service/) | Go | 8083 | Posts Management |
+| [comment-service](comment-service/) | NestJS + MongoDB | 8084 | Comments |
+| [notification-service](notification-service/) | NestJS + Redis | 8085 | Notifications |
 
-   ```bash
-   cd api-gateway && go mod download
-   cd ../profile-service && go mod download
-   cd ../post-service && go mod download
-   ```
+---
 
-   Java:
+## 📄 License
 
-   ```bash
-   cd ../auth-service && mvn clean install
-   ```
+MIT License — see [LICENSE](LICENSE) file for details.
 
-   TypeScript:
+---
 
-   ```bash
-   cd ../comment-service && npm install
-   cd ../notification-service && npm install
-   ```
-
-4. Run everything
-
-```bash
-docker compose up
-```
-
-API available at: <http://localhost:8080>
+<p align="center">
+  <strong>Built with ❤️ by A4AD Team</strong>
+</p>

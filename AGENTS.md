@@ -1,187 +1,207 @@
-# AGENTS.md
+# AGENTS.md - A4AD Forum Backend
 
-This file contains guidelines for agentic coding agents working in this A4AD Team backend monorepo.
+Guidelines for AI coding agents working on this microservices repository.
 
-## Project Overview
+## Repository Overview
 
-This is a microservices-based business process engine with git submodules:
-- **api-gateway** (Go + Fiber) - Entry point, routing, auth, rate limiting
-- **auth-service** (Java + Spring Boot) - IAM, JWT, roles, permissions  
-- **workflow-service** (Go + Neo4j) - Graph-based workflow engine
-- **request-service** (Go + PostgreSQL) - Core request management
-- **comment-service** (TypeScript + NestJS + MongoDB) - Comments and discussions
-- **notification-service** (TypeScript + NestJS) - Email/push notifications
-- **audit-service** (Go + ClickHouse) - Append-only audit logging
-- **scheduler-service** (Go) - Timeout/reminder scheduling
+Multi-service backend with Git submodules:
+- **api-gateway** (Go 1.23+, Fiber) - JWT validation, rate limiting, routing
+- **auth-service** (Java 21, Spring Boot 3.3+) - Authentication, JWT, roles
+- **profile-service** (Go 1.23+) - User profiles, avatars, stats
+- **post-service** (Go 1.23+) - Posts CRUD, counters
+- **comment-service** (NestJS 10+, TypeScript, MongoDB) - Threaded comments
+- **notification-service** (NestJS 10+, TypeScript, Redis) - Real-time notifications
 
-## Build/Test Commands
+## Build/Test/Lint Commands
 
-### Go Services (api-gateway, workflow-service, request-service, audit-service, scheduler-service)
+### Go Services (api-gateway, profile-service, post-service)
+
 ```bash
 # Build
-go build -o bin/service ./cmd/server
-
-# Run locally
-go run ./cmd/server
-# or use make if available
-make run
+make build                    # or: go build ./...
 
 # Test
-go test ./...                        # All tests
-go test -v ./internal/handler        # Specific package
-go test -run TestSpecificFunction ./internal/service  # Specific function
-go test -race ./...                  # Race condition detection
-go test -cover ./...                 # With coverage
+make test                     # or: go test ./...
+go test -v ./...              # verbose
+go test -race ./...           # race detection
+go test -run TestFunc ./...   # single test
 
-# Lint/Format (automatically run via lefthook pre-commit)
-go fmt ./...
-go vet ./...
-goimports -w .
-golangci-lint run                    # if configured
+# Lint/Format
+make lint                     # or: go vet ./...
+go fmt ./...                  # format
+goimports -w .                # organize imports
 
-# Dependencies
-go mod tidy
-go mod download
+# Run
+go run ./cmd/<service>
+make run
 ```
 
 ### Java Service (auth-service)
+
 ```bash
 # Build
-mvn clean compile
+mvn clean install
 mvn clean package
 
-# Run locally
-mvn spring-boot:run -Dspring.profiles.active=local
-
 # Test
-mvn test
-mvn test -Dtest=AuthServiceTest      # Specific test class
+mvn test                                    # all tests
+mvn test -Dtest=ClassNameTest               # single test class
+mvn test -Dtest=ClassNameTest#testMethod    # single method
+mvn clean test jacoco:report                # with coverage
+SKIP_TESTS=1 mvn test                       # skip tests
 
 # Lint/Format
-mvn spotless:apply                   # if configured
-mvn checkstyle:check
+mvn spotless:check                          # check formatting
+mvn spotless:apply                          # auto-fix formatting
+mvn checkstyle:check                        # checkstyle validation
 
-# Dependencies
-mvn clean install
+# Run
+mvn spring-boot:run -Dspring.profiles.active=local
 ```
 
-### TypeScript Services (comment-service, notification-service)
+### NestJS Services (comment-service, notification-service)
+
 ```bash
-# Install dependencies
+# Install
+pnpm install                  # preferred
 npm install
 
 # Build
+pnpm run build
 npm run build
 
-# Run locally
-npm run start:dev
-
 # Test
-npm test
-npm run test:watch
-npm run test:e2e
-npm test -- src/auth/auth.service.spec.ts  # Specific test file
+pnpm test                     # all tests
+pnpm test -- --testNamePattern="TestName"     # single test
+pnpm test -- --bail --passWithNoTests        # staged files
+pnpm run test:integration     # integration tests
 
 # Lint/Format
-npm run lint
-npm run format
-npm run lint:fix
+pnpm run lint                 # ESLint
+pnpm run lint -- --fix        # auto-fix
+pnpm run format:check         # Prettier check
+pnpm run format:write         # auto-format
+pnpm run type-check           # TypeScript check
 
-# Type checking
-npm run type-check
-npx tsc --noEmit
+# Run
+pnpm run start:dev            # development
+pnpm run start:prod           # production
 ```
 
-## Git Hooks & Automation
+## Git Workflow
 
-This monorepo uses Lefthook for Git automation:
-- **Pre-commit**: Auto-formats code, runs linting, executes tests on staged files
-- **Commit-msg**: Validates conventional commit format (feat/fix/docs/etc)
-- **Pre-push**: Runs full test suite, race condition tests, validates branch names
+### Branch Naming
 
-Branch naming follows Git Flow: `feature/description`, `bugfix/description`, `hotfix/description`
+Allowed patterns:
+- `feature/<description>` - New features
+- `bugfix/<description>` - Bug fixes  
+- `hotfix/<description>` - Production hotfixes
+- `release/<version>` - Release prep (e.g., v1.2.0)
+- `test/<description>` - Test branches (NestJS only)
+- `docs/<description>` - Documentation (NestJS only)
+- `chore/<description>` - Maintenance (NestJS only)
+- `refactor/<description>` - Refactoring (NestJS only)
+- `perf/<description>` - Performance (NestJS only)
+
+Protected branches (no direct push): `main`, `master`, `develop`, `release/*`, `hotfix/*`
+
+### Commit Messages
+
+Conventional Commits format:
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`, `revert`
+
+Rules:
+- First line max 72 characters
+- Description max 50 characters
+- No period at end
+- Use imperative mood ("add", not "added")
+
+Examples:
+- `feat(auth): add JWT token validation`
+- `fix: resolve memory leak in rate limiter`
+- `docs(api): update authentication endpoints`
+
+### Git Hooks (Lefthook)
+
+```bash
+lefthook install              # install hooks
+cp lefthook-local.yml.example lefthook-local.yml   # stricter local rules
+```
+
+Pre-commit runs: formatters, linters, tests on staged files
+Pre-push runs: branch validation, full test suite
+
+Bypass (not recommended): `git commit --no-verify` or `git push --no-verify`
 
 ## Code Style Guidelines
 
-### Go Services
-- **Imports**: Group standard library, third-party, then internal packages
-- **Formatting**: Use `gofmt` and `goimports` consistently
-- **Naming**: Package names lowercase; Functions `CamelCase`/`camelCase`; Variables `camelCase`; Constants `UPPER_SNAKE_CASE`
-- **Error Handling**: Always handle errors explicitly, use `fmt.Errorf` for wrapping, never panic for flow control
-- **Structure**: Follow Standard Go Project Layout with cmd/, internal/, pkg/
-- **Interfaces**: Keep small, "accept interfaces, return structs" principle
-- **Testing**: Table-driven tests, use `testify/assert` for assertions, target 80%+ coverage
-- **Fiber-specific**: Use `fiber.Ctx` as primary context, `c.Next()` for middleware chain
+### Go
 
-### Java Service
-- **Imports**: Group static imports, then javax, then org, then com
-- **Formatting**: Use Google Java Style or Spotless
-- **Naming**: Classes `PascalCase`; Methods/variables `camelCase`; Constants `UPPER_SNAKE_CASE`; Packages `lowercase.with.dots`
-- **Spring Boot**: Use constructor injection, @Service/@Repository/@Controller annotations
-- **Testing**: Use @SpringBootTest for integration, @WebMvcTest for web layer
-- **JPA**: Use repositories, proper entity mapping with @Entity annotations
+- Standard Go formatting (`go fmt`)
+- Use `goimports` for import organization
+- Follow [Effective Go](https://go.dev/doc/effective_go)
+- Error handling: explicit error returns, wrap with context
+- Naming: `CamelCase` exported, `camelCase` unexported
+- Interfaces suffixed with `-er` (e.g., `Reader`, `Writer`)
+- Tests: `TestFunctionName`, `TestType_Method` patterns
 
-### TypeScript Services
-- **Imports**: Use `import type` for types only, organize: node_modules, then @/, then relative
-- **Formatting**: Prettier with ESLint configuration (2-space indentation, single quotes, 100 char line length)
-- **Naming**: Classes/interfaces `PascalCase`; Functions/variables `camelCase`; Constants `UPPER_SNAKE_CASE`; Files `kebab-case.ts`
-- **NestJS**: Use dependency injection, proper module structure, `@Injectable()` for services
-- **TypeScript**: Strict mode enabled, prefer explicit types, avoid `any`
-- **Testing**: Use Jest, mock external dependencies, test both happy path and error cases, aim for >80% coverage
-- **Interfaces**: Prefix with `I` (`INotificationTemplate`, `IUserPreferences`)
+### Java
 
-## Database Guidelines
+- Spotless formatter (Google Java Format)
+- Spring Boot conventions
+- Package: `com.company.auth.*`
+- Naming: `PascalCase` classes, `camelCase` methods/variables, `SCREAMING_SNAKE_CASE` constants
+- Use `final` for immutable fields and parameters
+- Prefer constructor injection with `@RequiredArgsConstructor`
 
-### Databases by Service
-- **PostgreSQL** (auth, request): UUID primary keys, timestamps, JSONB metadata, proper indexes
-- **Neo4j** (workflow): Cypher queries, explicit relationships, APOC procedures, indexed properties
-- **MongoDB** (comments): Mongoose schemas, compound indexes, aggregation pipelines
-- **ClickHouse** (audit): Time partitioning, appropriate data types, materialized views
+### TypeScript/NestJS
 
-## Observability Standards
+- ESLint + Prettier configuration
+- Naming:
+  - `PascalCase`: classes, interfaces, types, enums, decorators
+  - `camelCase`: variables, functions, methods, properties
+  - `SCREAMING_SNAKE_CASE`: constants
+  - Files: `.controller.ts`, `.service.ts`, `.module.ts`, `.dto.ts`, `.entity.ts`, `.spec.ts`
+- Imports: group by external/internal, alphabetical within groups
+- Use strict TypeScript mode
+- Prefer `interface` over `type` for object shapes
+- Use decorators for metadata (`@Controller`, `@Injectable`, etc.)
 
-- **Logging**: Structured JSON logging with correlation IDs
-- **Tracing**: OpenTelemetry with proper span naming  
-- **Metrics**: Prometheus client libraries, use standard metric names
-- **Health**: Implement `/health` and `/ready` endpoints
+### General
 
-## Security Guidelines
+- No `console.log` in production code (use proper logging)
+- No secrets in code (use environment variables)
+- All commits must pass pre-commit hooks
+- Write tests for new features
+- Update documentation for API changes
 
-- Validate all inputs, never trust user data
-- Use parameterized queries to prevent SQL injection
-- Implement rate limiting at API gateway level
-- Never log sensitive data (passwords, tokens, PII)
-- Use environment variables for configuration, never hardcode secrets
+## Quick Reference
 
-## Docker Standards
+```bash
+# Start infrastructure
+docker compose up -d postgres mongodb redis kafka
 
-- Multi-stage builds for Go services
-- Use specific image tags, avoid `latest`
-- Include HEALTHCHECK instructions
-- Set proper USER directive for security
-- Use .dockerignore files
+# Initialize all submodules
+git submodule update --init --recursive
 
-## Testing Strategy
+# Common shortcuts
+make dev                      # run service in dev mode
+make test-coverage            # generate coverage report
+make lint-fix                 # auto-fix linting issues
+```
 
-- Unit tests: 80%+ coverage target
-- Integration tests: Test database operations
-- Contract tests: Test service boundaries
-- E2E tests: Critical user journeys
-- Load tests: Performance testing for key endpoints
+## Architecture Notes
 
-## Docker Standards
-
-- Multi-stage builds for Go services
-- Use specific image tags, avoid `latest`
-- Include HEALTHCHECK instructions
-- Set proper USER directive for security
-- Use .dockerignore files
-
-## Performance Guidelines
-
-- Use connection pooling for database/HTTP clients
-- Implement proper timeouts for all external calls
-- Use context with timeout for long-running operations
-- Consider response caching for static endpoints
-- Monitor memory usage and goroutine leaks
-- Implement rate limiting at appropriate levels
+- API Gateway routes: `/auth/*` (no JWT), `/api/v1/*` (JWT required)
+- Services communicate via Kafka events
+- PostgreSQL: auth, profile, post services
+- MongoDB: comment service
+- Redis: gateway rate limiting, notifications cache
