@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: a4ad
+
+resources:
+  - ../base
+
+replicas:
+  - name: api-gateway
+    count: 3
+  - name: auth-service
+    count: 3
+  - name: post-service
+    count: 3
+  - name: comment-service
+    count: 3
+  - name: notification-service
+    count: 3
+  - name: profile-service
+    count: 3
+
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      spec:
+        template:
+          spec:
+            imagePullSecrets:
+              - name: registry-secret
+    target:
+      kind: Deployment
+
+configMapGenerator:
+  - name: a4ad-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=warn
+      - NODE_ENV=production
