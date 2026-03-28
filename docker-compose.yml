@@ -90,6 +90,21 @@ services:
     networks:
       - a4ad-network
 
+  post-migrate:
+    image: migrate/migrate:v4.17.0
+    container_name: a4ad-post-migrate
+    volumes:
+      - ./post-service/migration/migrations:/migrations
+    command: >
+      -path=/migrations
+      -database=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/${POSTGRES_DB:-a4ad}?sslmode=disable
+      up
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - a4ad-network
+
   post-service:
     build:
       context: ./post-service
@@ -104,6 +119,8 @@ services:
       - REDIS_ADDR=redis:6379
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
     depends_on:
+      post-migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -126,10 +143,50 @@ services:
       - MONGODB_URI=mongodb://mongodb:27017/${MONGODB_DB:-comment-service}
       - REDIS_HOST=redis
       - RABBITMQ_URI=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
+      - POST_SERVICE_URL=http://post-service:8083/api/v1
+      - PROFILE_SERVICE_URL=http://profile-service:8082
+      - INTERNAL_SECRET=a4ad-internal-secret
     depends_on:
       mongodb:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - a4ad-network
+
+  profile-migrate:
+    image: migrate/migrate:v4.17.0
+    container_name: a4ad-profile-migrate
+    volumes:
+      - ./profile-service/migrations:/migrations
+    command: >
+      -path=/migrations
+      -database=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/${POSTGRES_DB:-a4ad}?sslmode=disable
+      up
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - a4ad-network
+
+  profile-service:
+    build:
+      context: ./profile-service
+      dockerfile: Dockerfile
+    container_name: a4ad-profile-service
+    ports:
+      - "8082:8082"
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/${POSTGRES_DB:-a4ad}?sslmode=disable
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - JWT_SECRET=changeit-changeit-changeit-changeit
+      - INTERNAL_SECRET=a4ad-internal-secret
+    depends_on:
+      profile-migrate:
+        condition: service_completed_successfully
+      postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -150,6 +207,7 @@ services:
       - AUTH_SERVICE_URL=http://auth-service:8081
       - POST_SERVICE_URL=http://post-service:8083
       - COMMENT_SERVICE_URL=http://comment-service:3000
+      - PROFILE_SERVICE_URL=http://profile-service:8082
     depends_on:
       rabbitmq:
         condition: service_healthy
